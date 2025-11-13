@@ -1,6 +1,6 @@
 import argparse
 import sys
-from typing import Dict, Any
+from cargo_fetcher import CargoDependencyFetcher  # исправленное имя файла
 
 
 def parse_arguments():
@@ -50,29 +50,18 @@ def main():
     try:
         args = parse_arguments()
 
-        print("=== Параметры конфигурации ===")
-        config_params = {
-            'package': args.package,
-            'repository': args.repository,
-            'test_mode': args.test_mode,
-            'version': args.version,
-            'max_depth': args.max_depth,
-            'filter_substring': args.filter_substring
-        }
+        fetcher = CargoDependencyFetcher(test_mode=args.test_mode, crates_base_url=args.repository)
 
-        for key, value in config_params.items():
-            print(f"{key}: {value}")
+        dependencies = fetcher.fetch_dependencies(args.package, args.version)
 
-        if not args.package:
-            raise ValueError("Имя пакета не может быть пустым")
+        print(f"=== Прямые зависимости пакета {args.package} ===")
+        if dependencies:
+            for dep in dependencies:
+                print(f"  - {dep}")
+        else:
+            print("зависимости отсутствуют")
 
-        if not args.repository:
-            raise ValueError("Репозиторий empty()")
-
-        if args.max_depth <= 0:
-            raise ValueError("бро, давай глубину больше 0")
-
-        print("Конфигурация успешно загружена")
+        print(f"Найдено зависимостей - {len(dependencies)}")
 
     except Exception as e:
         print(f"Ошибка: {e}")
