@@ -46,8 +46,6 @@ class CargoDependencyFetcher:
             raise Exception(f"Ошибка при получении данных из crates.io: {e}")
 
     def _fetch_test_dependencies(self, package_name: str) -> List[str]:
-        print(f"Тестовый режим для пакета {package_name}")
-
         test_file = f"test_{package_name}.json"
 
         if not os.path.exists(test_file):

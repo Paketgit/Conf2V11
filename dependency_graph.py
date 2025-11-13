@@ -8,6 +8,7 @@ class DependencyGraph:
         self.graph: Dict[str, List[str]] = {}
         self.visited: Set[str] = set()
         self.cycles: List[List[str]] = []
+        self.reverse_graph: Dict[str, List[str]] = {}
 
     def build_graph_dfs(self, package: str, max_depth: int, filter_substring: str = None,
                         current_depth: int = 0, path: List[str] = None) -> None:
@@ -36,6 +37,11 @@ class DependencyGraph:
             self.graph[package] = dependencies
 
             for dep in dependencies:
+                if dep not in self.reverse_graph:
+                    self.reverse_graph[dep] = []
+                self.reverse_graph[dep].append(package)
+
+            for dep in dependencies:
                 self.build_graph_dfs(dep, max_depth, filter_substring,
                                      current_depth + 1, current_path)
 
@@ -48,3 +54,38 @@ class DependencyGraph:
 
     def get_cycles(self) -> List[List[str]]:
         return self.cycles
+
+    def get_reverse_dependencies(self, package: str) -> List[str]:
+        return self.reverse_graph.get(package, [])
+
+    def get_installation_order(self, package: str) -> List[str]:
+        visited = set()
+        temp_visited = set()
+        order = []
+
+        def dfs_visit(pkg: str):
+            if pkg in temp_visited:
+                return
+            if pkg in visited:
+                return
+
+            temp_visited.add(pkg)
+
+            for dep in self.graph.get(pkg, []):
+                dfs_visit(dep)
+
+            temp_visited.remove(pkg)
+            visited.add(pkg)
+            order.append(pkg)
+
+        dfs_visit(package)
+        return order
+
+    def build_complete_graph_for_reverse_deps(self, root_package: str, max_depth: int, filter_substring: str = None):
+        self.build_graph_dfs(root_package, max_depth, filter_substring)
+
+        all_packages = list(self.graph.keys())
+
+        for pkg in all_packages:
+            if pkg != root_package:
+                self.build_graph_dfs(pkg, max_depth, filter_substring)
