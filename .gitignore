@@ -180,3 +180,9 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+/test_A.json
+/test_B.json
+/test_C.json
+/test_D.json
+/test_E.json
+/test_F.json

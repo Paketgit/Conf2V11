@@ -1,6 +1,7 @@
 import argparse
 import sys
-from cargo_fetcher import CargoDependencyFetcher  # исправленное имя файла
+from cargo_fetcher import CargoDependencyFetcher
+from dependency_graph import DependencyGraph
 
 
 def parse_arguments():
@@ -50,18 +51,31 @@ def main():
     try:
         args = parse_arguments()
 
-        fetcher = CargoDependencyFetcher(test_mode=args.test_mode, crates_base_url=args.repository)
+        fetcher = CargoDependencyFetcher(test_mode=args.test_mode)
 
-        dependencies = fetcher.fetch_dependencies(args.package, args.version)
+        graph_builder = DependencyGraph(fetcher)
+        graph_builder.build_graph_dfs(
+            args.package,
+            args.max_depth,
+            args.filter_substring
+        )
 
-        print(f"=== Прямые зависимости пакета {args.package} ===")
-        if dependencies:
-            for dep in dependencies:
-                print(f"  - {dep}")
+        graph = graph_builder.get_graph()
+        cycles = graph_builder.get_cycles()
+
+        print(f"\n=== Граф зависимостей для {args.package} (глубина: {args.max_depth}) ===")
+        for package, deps in graph.items():
+            filtered_deps = [d for d in deps if not args.filter_substring or args.filter_substring not in d]
+            print(f"{package} -> {filtered_deps}")
+
+        if cycles:
+            print(f"\nОбнаружены циклические зависимости:")
+            for cycle in cycles:
+                print(f"  Цикл: {' -> '.join(cycle)}")
         else:
-            print("зависимости отсутствуют")
+            print(f"\nЦиклические зависимости не обнаружены")
 
-        print(f"Найдено зависимостей - {len(dependencies)}")
+        print(f"Обработано пакетов -  {len(graph)}")
 
     except Exception as e:
         print(f"Ошибка: {e}")
